@@ -1,4 +1,4 @@
-import openai # maybe swap with another api
+import openai 
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
@@ -11,12 +11,17 @@ genai.configure(api_key=GEMINI_API_KEY)
 def generate_semantic_description(emotion, action):
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-pro")  # gemini pro
-        response = model.generate_content(f"Describe someone who is {action} while feeling {emotion} in a short, natural-sounding sentence.")
+        prompt = (
+            f"Write a short, literal description (one sentence) of someone showing only their upper body, "
+            f"who is currently {action} and feeling {emotion}. " "Avoid guessing age, background, or unnecessary details. "
+            "Keep it realistic, clear, and concise."
+        )
+        model = genai.GenerativeModel("gemini-1.5-pro") 
+        response = model.generate_content(prompt)
         return response.text.strip()  # extracting response text
     
     except Exception as e:
-        print(f"Error in API call: {e}")  # Print error to console, there are some limits
+        print(f"Error in API call: {e}")  # logging error to console, there are some limits on the API usage
         return f"Error generating description: {e}"
     
 # print(generate_semantic_description("Happy", "Waving"))  # test

@@ -40,9 +40,14 @@ def main():
         # Generate output text (combine top predicted actions with detected emotion)
         # output_text = generate_output(emotion, action_predictions[0]) 
 
-        # Display the output on the video
-        cv2.putText(frame, output_text, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        cv2.imshow('Webcam Feed', frame)
+        # Display the output on the video       
+        cv2.namedWindow('Webcam Feed', cv2.WINDOW_NORMAL) #make it resizable
+        _, _, win_w, win_h = cv2.getWindowImageRect("Webcam Feed") #get current window size
+        resized_frame = cv2.resize(frame, (win_w, win_h)) #resize frame to match window
+        cv2.putText(resized_frame, output_text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA) # draw on resized_frame instead of original frame 
+
+        #display resized frame
+        cv2.imshow("Webcam Feed", resized_frame)        
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
