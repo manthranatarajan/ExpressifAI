@@ -1,91 +1,72 @@
 import torch
-import torch.nn.functional as F
+import clip
+from PIL import Image
+import cv2
+
+STATIONARY_ACTIONS = {
+    0: "A person nodding their head in agreement",
+    1: "One person is using both of their hands opened up to clap",
+    2: "A person laughing out loud",
+    3: "A person smiling happily",
+    4: "A person sitting still and not moving",
+    5: "A person waving by moving the palm of one of their hands with fingers spread out rapidly to say hello",
+    6: "A person pointing at something",
+    7: "A person looking around curiously",
+    8: "A person typing on a keyboard",
+    9: "A person reading a book or document",
+    10: "A person using a smartphone or tablet",
+    11: "A person is praying with their hands joint together",
+    12: "A person with glasses on their face is just sitting still",
+    13: "Two people are sitting together and talking by opening and closing their mouths",
+    14: "Two people are facing each other",
+    15: "A person sitting and fixing their hair by runnig their fingers through it",
+    16: "A person sitting and scratching their head",
+    17: "A person sitting and yawning",
+    18: "A person is hiding their face with one hand",
+    19: "A person is hiding their face with both hands",
+    20: "Their is no face detected in the frame",
+    21: "Two people are kissing each other on the lips",
+    22: "A person is punching their fist into the palm of their other hand",
+    23: "A person is punching the screen with one hand made into a fist",
+    24: "A person is punching another person with one hand made into a fist",
+    26: "A person giving another person a fist bump with both of them using one hand made into a fist and making contact with each other",
+    25: "A person giving another person a hug with both arms around each other",
+
+}
+
 
 def load_action_model(device):
+    """Loads the CLIP model and preprocessing pipeline."""
+    clip_model, preprocess = clip.load("ViT-B/32", device=device)
+    clip_model.eval()
+    return clip_model, preprocess
+
+
+def recognize_action_single(frame, device, action_model):
+
     
-    # Load the SlowFast model
-    model_name = "slowfast_r50"
-    model = torch.hub.load("facebookresearch/pytorchvideo", model=model_name, pretrained=True)
-    model = model.to(device)
-    model.eval()
-    return model
-
-def preprocess_frames(frames):
-    tensors = []
-    for frame in frames:
-        tensor = torch.from_numpy(frame).float() / 255.0  # Normalize to [0, 1]
-        
-        if len(tensor.shape) == 2:  # Grayscale image (H, W)
-            tensor = tensor.unsqueeze(2)  # Add channel dimension -> (H, W, 1)
-        
-        if tensor.shape[2] == 1:  # Grayscale image (H, W, 1)
-            tensor = tensor.repeat(1, 1, 3)  # Repeat channel -> (H, W, 3)
-
-        if tensor.shape[2] != 3:  # Validate number of channels
-            raise ValueError(f"Unexpected number of channels: {tensor.shape[2]}")
-
-        # permute to PyTorch format
-        tensor = tensor.permute(2, 0, 1)
-
-        # Resize tensor to match model input size (224x224)
-        tensor = F.interpolate(tensor.unsqueeze(0), size=(224, 224), mode="bilinear", align_corners=False).squeeze(0)
-        tensors.append(tensor)
-
-    return tensors
-
-def recognize_action(frames, device, action_model):
-
-
-   # Perform action recognition using the SlowFast model.
     try:
-        # Preprocess frames
-        processed_frames = preprocess_frames(frames)
+        clip_model, preprocess = action_model
 
-        # Ensure enough frames for SlowFast model (minimum 32 for fast_pathway)
-        if len(processed_frames) < 32:
-            print(f"Insufficient frames ({len(processed_frames)}). Padding to meet minimum requirement.")
-            while len(processed_frames) < 32:
-                processed_frames.append(processed_frames[-1])  # Duplicate last frame
+        # Convert BGR OpenCV frame to RGB PIL image
+        image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        clip_input = preprocess(image).unsqueeze(0).to(device)
 
-        # Verify that all frames have consistent dimensions
-        for i, frame in enumerate(processed_frames):
-            print(f"Frame {i} shape: {frame.shape}")
-
-        # Stack frames into a single tensor
-        video_tensor = torch.stack(processed_frames)
-
-        # Prepare fast pathway first
-        fast_pathway = video_tensor[:32]  # Use first 32 frames
-        fast_pathway = fast_pathway.unsqueeze(0)  # Add batch dimension
-        fast_pathway = fast_pathway.permute(0, 2, 1, 3, 4)  # batch, channel, time, height, width
-
-        # Prepare slow pathway
-        slow_pathway = video_tensor[:32:4]  # Take 8 frames (32/4) for slow pathway
-        slow_pathway = slow_pathway.unsqueeze(0)  # Add batch dimension
-        slow_pathway = slow_pathway.permute(0, 2, 1, 3, 4)  # batch, channel, time, height, width
-
-        # Move to device and create input list
-        inputs = [slow_pathway.to(device), fast_pathway.to(device)]
-
-        print(f"Input shapes to model: {[i.shape for i in inputs]}")
-
-        # Pass inputs through the action recognition model
         with torch.no_grad():
-            preds = action_model(inputs)
+            image_features = clip_model.encode_image(clip_input)
+            text_inputs = clip.tokenize(list(STATIONARY_ACTIONS.values())).to(device)
+            text_features = clip_model.encode_text(text_inputs)
 
-        # Apply softmax to get probabilities
-        post_act = torch.nn.Softmax(dim=1)
-        preds = post_act(preds)
+        # Normalize features
+        image_features /= image_features.norm(dim=-1, keepdim=True)
+        text_features /= text_features.norm(dim=-1, keepdim=True)
 
-        # Get top predicted actions
-        pred_classes = preds.topk(k=5).indices.squeeze(0).tolist()
+        # Compute similarity
+        similarity = image_features @ text_features.T
+        pred_index = similarity.argmax(dim=-1).item()
 
-        # Map predicted classes to readable labels
-        kinetics_id_to_classname = {i: f"Action {i}" for i in range(400)}  
-        pred_class_names = [kinetics_id_to_classname[int(i)] for i in pred_classes]
-
-        return pred_class_names
+        return STATIONARY_ACTIONS[pred_index]
 
     except Exception as e:
-        print(f"Error during action recognition: {e}")
-        return []
+        print(f"Error in lightweight action recognition: {e}")
+        return "Error detecting action"
