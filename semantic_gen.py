@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 # load_dotenv() 
 # GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_API_KEY = "AIzaSyC5IK6_np32zYxebmKvY8nWreZO2dLoAs8"
+GEMINI_API_KEY = "AIzaSyDaezW5AvriAeENZy1P3LdFJes5rlX_d7w"
 genai.configure(api_key=GEMINI_API_KEY)
 
 def generate_semantic_description(emotion, action):
@@ -14,17 +14,24 @@ def generate_semantic_description(emotion, action):
         prompt = (
             f"Write a short, literal description (one sentence) of someone showing only their upper body, "
             f"who is currently {action} and feeling {emotion}. " "Avoid guessing age, background, or unnecessary details. "
-            "Keep it realistic, clear, and concise."
+            "Keep it realistic, clear, and concise. "
+            f"The sentence should be like: The person is {action} and feeling {emotion}. "
         )
-        model = genai.GenerativeModel("gemini-1.5-pro") 
+        model = genai.GenerativeModel("gemini-1.5-pro")
         response = model.generate_content(prompt)
         return response.text.strip()  # extracting response text
     
     except Exception as e:
-        print(f"Error in API call: {e}")  # logging error to console, there are some limits on the API usage
+        print(f"Error in API call: {e}")  # logging error to console
         return f"Error generating description: {e}"
     
 # print(generate_semantic_description("Happy", "Waving"))  # test
+
+
+
+
+
+
 
 
 # Uncomment the following lines if you wanna use OpenAI API instead of Gemini

@@ -40,7 +40,7 @@ def main():
         # Generate output text (combine top predicted actions with detected emotion)
         # output_text = generate_output(emotion, action_predictions[0]) 
 
-        # Display the output on the video       
+        # Display the output on the video
         cv2.namedWindow('Webcam Feed', cv2.WINDOW_NORMAL) #make it resizable
         _, _, win_w, win_h = cv2.getWindowImageRect("Webcam Feed") #get current window size
         resized_frame = cv2.resize(frame, (win_w, win_h)) #resize frame to match window
