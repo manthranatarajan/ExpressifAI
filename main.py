@@ -1,12 +1,12 @@
 import cv2
 import torch
-from PIL import Image
 from webcam_loader import setup_webcam, get_frame
 from emotion_model import detect_emotion
 from action_model import load_action_model, recognize_action
 from fusion import generate_output
 from semantic_gen import generate_semantic_description
 import textwrap
+from action_model import load_action_model, recognize_action_single
 
 
 def draw_text_wrapped(img, text, start_pos, font, font_scale, color, thickness, line_spacing=10, max_width=50):
@@ -19,22 +19,34 @@ def draw_text_wrapped(img, text, start_pos, font, font_scale, color, thickness, 
 
 
 def main():
+    # Setup device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
+    # Load model
+    model = load_action_model(device)
+
+    # Setup webcam
     cap = setup_webcam()
     if not cap:
         return
 
-    # Load models
-    emotion_action_model = load_action_model(device)
+    # Create resizable window
+    cv2.namedWindow('Webcam Feed', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('Webcam Feed', 1200, 600)
+
+    # Initialize frame counter and prediction buffer
+    frame_count = 0
+    predict_every_n_frames = 15  # Predict every half second (assuming ~30 FPS)
+    last_prediction = "Analyzing..."
 
     while True:
         frame = get_frame(cap)
         if frame is None:
             break
 
-        # Convert frame to PIL Image for processing
-        pil_frame = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        frame_count += 1
+        if frame_count % predict_every_n_frames == 0:
+            last_prediction = recognize_action_single(frame, device, model)
 
         # Detect emotion and action
         emotion = detect_emotion(pil_frame)
@@ -72,6 +84,11 @@ def main():
 
         #display resized frame
         cv2.imshow("Webcam Feed", resized_frame)        
+        
+        # Display prediction on video
+        #cv2.putText(frame, f"Action: {last_prediction}", (10, 50),
+        #            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        #cv2.imshow('Webcam Feed', frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

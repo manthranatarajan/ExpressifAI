@@ -1,3 +1,5 @@
+#ignore following files/folders
+/__pycache__/
 __pycache__/action_model.cpython-312.pyc
 __pycache__/emotion_model.cpython-312.pyc
 __pycache__/fusion.cpython-312.pyc
