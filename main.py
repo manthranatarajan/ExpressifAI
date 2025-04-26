@@ -6,6 +6,17 @@ from emotion_model import detect_emotion
 from action_model import load_action_model, recognize_action
 from fusion import generate_output
 from semantic_gen import generate_semantic_description
+import textwrap
+
+
+def draw_text_wrapped(img, text, start_pos, font, font_scale, color, thickness, line_spacing=10, max_width=50):
+    x, y = start_pos
+    wrapped_text = textwrap.wrap(text, width=max_width)
+
+    for i, line in enumerate(wrapped_text):
+        y_line = y + i * (int(font_scale * 30) + line_spacing)  # 30 is approx height multiplier
+        cv2.putText(img, line, (x, y_line), font, font_scale, color, thickness, cv2.LINE_AA)
+
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -44,7 +55,20 @@ def main():
         cv2.namedWindow('Webcam Feed', cv2.WINDOW_NORMAL) #make it resizable
         _, _, win_w, win_h = cv2.getWindowImageRect("Webcam Feed") #get current window size
         resized_frame = cv2.resize(frame, (win_w, win_h)) #resize frame to match window
-        cv2.putText(resized_frame, output_text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA) # draw on resized_frame instead of original frame 
+        # cv2.putText(resized_frame, output_text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA) # draw on resized_frame instead of original frame 
+        # cv2.putText(resized_frame, output_text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv2.LINE_AA)
+        
+        draw_text_wrapped(
+            resized_frame,
+            output_text,
+            start_pos=(20, 50),
+            font=cv2.FONT_HERSHEY_SIMPLEX,
+            font_scale=0.6,
+            color=(255, 255, 255),
+            thickness=1,
+            line_spacing=5,
+            max_width=50 
+        )
 
         #display resized frame
         cv2.imshow("Webcam Feed", resized_frame)        
