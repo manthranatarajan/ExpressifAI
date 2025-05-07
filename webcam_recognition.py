@@ -28,10 +28,9 @@ def process_webcam(frame):
     
     # Detect emotion from the frame
     emotion_idx = detect_emotion(pil_image)
-    emotion = EMOTION_LABELS.get(emotion_idx, "Unknown")
     
     # Generate output based on emotion and action
-    output_text = generate_output(emotion, actions)
+    output_text = generate_output(emotion_idx, actions)     # Pass index, not label
     
     return frame, output_text, output_text  # Return frame for webcam display, and outputs
 
