@@ -6,6 +6,8 @@ from action_model import load_action_model, recognize_action_single
 from emotion_model import detect_emotion
 from fusion import generate_output
 
+# Emotion label mapping
+EMOTION_LABELS = {0: "Angry", 1: "Disgust", 2: "Fear", 3: "Happy", 4: "Sad", 5: "Surprise", 6: "Neutral"}
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -14,23 +16,24 @@ action_model, preprocess = load_action_model(device)
 
 # Process webcam frames for action recognition and emotion detection
 def process_webcam(frame):
-    # Convert frame from RGB to BGR (OpenCV uses BGR)
+    # Convert frame from RGB to BGR
     frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     
     # Get action using recognize_action_single and wrap in a list
-    action = recognize_action_single(frame_bgr, device, action_model)
+    action = recognize_action_single(frame_bgr, device, (action_model, preprocess))
     actions = [action]  # generate_output expects a list
     
     # Convert the frame to PIL image for emotion detection
     pil_image = Image.fromarray(frame)
     
     # Detect emotion from the frame
-    emotion = detect_emotion(pil_image)
+    emotion_idx = detect_emotion(pil_image)
+    emotion = EMOTION_LABELS.get(emotion_idx, "Unknown")
     
     # Generate output based on emotion and action
-    terminal_output = generate_output(emotion, actions)
+    output_text = generate_output(emotion, actions)
     
-    return terminal_output, terminal_output
+    return frame, output_text, output_text  # Return frame for webcam display, and outputs
 
 # Create the Gradio interface
 with gr.Blocks() as demo:
@@ -45,21 +48,20 @@ with gr.Blocks() as demo:
                 type="numpy",
                 height=600
             )
+            webcam_display = gr.Image(label="Webcam Output", type="numpy", height=600)
         
         # Right side with Output section
         with gr.Column(scale=1, elem_id="right-panel", min_width=200):
-            # Output section displaying the results from the generate_output function
             gr.HTML("<h2 style='font-size: 28px; font-family: Arial, sans-serif; margin-bottom: 10px;'>Output</h2>")
             output_box = gr.Textbox(label="Output", lines=4)
             
-            # Terminal section below Output
             gr.HTML("<h2 style='font-size: 28px; font-family: Arial, sans-serif; margin-bottom: 10px;'>Terminal</h2>")
             terminal_box = gr.Textbox(label="Terminal Output", lines=12)
     
     input_img.stream(
         process_webcam,
         inputs=input_img,
-        outputs=[output_box, terminal_box], # Now outputs both to Output and Terminal sections
+        outputs=[webcam_display, output_box, terminal_box],
         time_limit=15,
         stream_every=0.1,
         concurrency_limit=30
