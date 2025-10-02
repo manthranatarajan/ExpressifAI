@@ -20,7 +20,7 @@ Quick setup
 
    Note: If you have a CUDA GPU and want GPU acceleration, install the appropriate `torch`/`torchvision` build from https://pytorch.org/.
 
-3. (Optional) Add your Gemini API key to a `.env` file in the project root:
+3. Add your Gemini API key to a `.env` file in the project root:
 
    GEMINI_API_KEY=your_api_key_here
 
