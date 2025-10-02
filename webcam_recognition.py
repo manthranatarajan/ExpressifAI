@@ -9,7 +9,7 @@ from semantic_gen import generate_semantic_description
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load models
-action_model = load_action_model(device)
+action_model, action_preprocess = load_action_model(device)
 emotion_model, emotion_preprocess = load_emotion_model(device)
 
 # Process webcam frames for action recognition and emotion detection
@@ -17,8 +17,8 @@ def process_webcam(frame):
     # Gradio provides RGB, but action model expects BGR OpenCV frame
     frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     
-    # Get action prediction
-    action = recognize_action_single(frame_bgr, device, action_model)
+    # Get action prediction (pass preprocess)
+    action = recognize_action_single(frame_bgr, device, action_model, action_preprocess)
     
     # Convert the frame to PIL image for emotion detection
     pil_image = Image.fromarray(frame)
