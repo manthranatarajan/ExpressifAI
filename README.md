@@ -1,12 +1,12 @@
 # ExpressifAI
 
-A webcam demo that recognizes a person's action and facial emotion and (optionally) generates a short semantic description using the Gemini API. It uses CLIP for zero-shot action recognition and a DenseNet-161 model for emotion classification.
+A webcam demo that recognizes a person's action and facial emotion and generates a short semantic description using the Gemini API. It uses CLIP for zero-shot action recognition and a DenseNet-161 model for emotion classification.
 
 What it does
 - Captures frames from your webcam.
 - Recognizes actions using CLIP (matching frames against a set of action captions).
 - Detects facial emotion with a DenseNet-161 classifier (7 labels).
-- Optionally calls the Gemini API to produce a natural-language description; falls back to a simple template if no API key is provided.
+- Calls the Gemini API to produce a natural-language description; falls back to a simple template if no API key is provided.
 
 Quick setup
 1. Install Python 3.10+ and create a virtual environment:
