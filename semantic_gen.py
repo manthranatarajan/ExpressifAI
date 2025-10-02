@@ -1,62 +1,33 @@
-import openai 
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 
-# load_dotenv() 
-# GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_API_KEY = "AIzaSyDaezW5AvriAeENZy1P3LdFJes5rlX_d7w"
-genai.configure(api_key=GEMINI_API_KEY)
+# Load environment variables from .env file
+load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Configure the Gemini API, but only if the key exists
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 def generate_semantic_description(emotion, action):
+    """Generates a semantic description using Gemini, with a fallback for errors."""
+    # Provide a fallback if the API key is missing or invalid
+    if not GEMINI_API_KEY:
+        print("Warning: GEMINI_API_KEY not found. Using fallback description.")
+        return f"The person appears to be {action} and feeling {emotion}."
 
     try:
         prompt = (
-            f"Write a short, literal description (one sentence) of someone showing only their upper body, "
-            f"who is currently {action} and feeling {emotion}. " "Avoid guessing age, background, or unnecessary details. "
-            "Keep it realistic, clear, and concise. "
-            f"The sentence should be like: The person is {action} and feeling {emotion}. "
+            f"Write a short, single-sentence, literal description of a person who is currently {action} and appears to be feeling {emotion}. "
+            "Focus only on the action and emotion."
         )
-        model = genai.GenerativeModel("gemini-1.5-pro")
+        # Use a stable, generally available model
+        model = genai.GenerativeModel("gemini-pro")
         response = model.generate_content(prompt)
-        return response.text.strip()  # extracting response text
-    
+        return response.text.strip()
+
     except Exception as e:
-        print(f"Error in API call: {e}")  # logging error to console
-        return f"Error generating description: {e}"
-    
-# print(generate_semantic_description("Happy", "Waving"))  # test
-
-
-
-
-
-
-
-
-# Uncomment the following lines if you wanna use OpenAI API instead of Gemini
-
-# load_dotenv()
-# openai.api_key = os.getenv("OPENAI_API_KEY") 
-
-# # Generates a descriptive sentence from detected action and emotion
-# def generate_semantic_description(action: str, emotion: str) -> str:
-        
-#     prompt = (f"Given the action '{action}' and emotion '{emotion}', generate a natural-sounding sentence describing "
-#               "what is happening in a human-readable way.")
-    
-#     try:
-#         response = openai.ChatCompletion.create(
-#             model="gpt-4o",  # Replace with the preferred API model
-#             messages=[{"role": "system", "content": "You are an assistant that describes human activities."},
-#                       {"role": "user", "content": prompt}],
-#             # max_tokens=50
-#         )
-        
-#         # return response['choices'][0]['message']['content'].strip()   for the older api
-#         return response.choices[0].message.content
-    
-#     except Exception as e:
-#         print(f"Error in API call: {e}")  # Print error to console
-#         return f"Error generating description: {e}"
-    
+        print(f"Error in Gemini API call: {e}")
+        # Fallback to a simple, pre-formatted description on API failure
+        return f"The person appears to be {action} and feeling {emotion}."

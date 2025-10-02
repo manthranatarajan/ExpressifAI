@@ -1,5 +1,6 @@
 import cv2
 import torch
+from PIL import Image
 from webcam_loader import setup_webcam, get_frame
 from action_model import load_action_model, recognize_action_single
 from emotion_model import load_emotion_model, recognize_emotion_single
@@ -11,6 +12,7 @@ def main():
 
     # Load models
     action_model = load_action_model(device)
+    action_model, action_preprocess = load_action_model(device)
     emotion_model, emotion_preprocess = load_emotion_model(device)
 
     # Setup webcam
@@ -36,8 +38,11 @@ def main():
 
         frame_count += 1
         if frame_count % predict_every_n_frames == 0:
-            last_action_prediction = recognize_action_single(frame, device, action_model)
-            last_emotion_prediction = recognize_emotion_single(frame, device, emotion_model, emotion_preprocess)
+            # Convert BGR frame to RGB and then to a PIL Image for the models
+            pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+            last_action_prediction = recognize_action_single(frame, device, action_model, action_preprocess)
+            last_emotion_prediction = recognize_emotion_single(pil_image, device, emotion_model, emotion_preprocess)
             last_semantic_output = generate_semantic_description(last_emotion_prediction, last_action_prediction)
 
         # Display predictions on video

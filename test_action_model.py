@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from action_model import load_action_model, recognize_action
+from action_model import load_action_model, recognize_action_single
 
 def test_recognize_action():
     # Simulate input frames 
@@ -15,7 +15,7 @@ def test_recognize_action():
     action_model = load_action_model(device)
 
     # Perform action recognition
-    predictions = recognize_action(frames, device, action_model)
+    predictions = recognize_action_single(frames, device, action_model)
 
     # Print the predictions
     print("Predicted Actions:", predictions)

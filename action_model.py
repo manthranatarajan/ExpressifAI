@@ -42,12 +42,9 @@ def load_action_model(device):
     return clip_model, preprocess
 
 
-def recognize_action_single(frame, device, action_model):
+def recognize_action_single(frame, device, clip_model, preprocess):
 
-    
     try:
-        clip_model, preprocess = action_model
-
         # Convert BGR OpenCV frame to RGB PIL image
         image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         clip_input = preprocess(image).unsqueeze(0).to(device)
